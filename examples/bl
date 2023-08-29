@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# bl launcher for WSL
+
+# Run bl on windows machine from WSL. supports pyenv.
+
+
+declare -a args=() cmd=()
+declare end
+
+function escape_word() {
+    printf "%s" "$1" | sed -e 's/`/``/g; s/"/`"/g'
+}
+
+if ! (cd /mnt/c; cmd.exe /c where.exe /Q bl) > /dev/null; then
+    echo "please install bl-notebook." >&2
+    echo "" >&2
+    echo "  $ pip install git+https://github.com/fb8works/bl-notebook.git" >&2
+    echo "" >&2
+    exit 2
+fi
+
+# List of powershell script
+cmd=()
+
+# Append CD command
+cmd+=("cd")
+args=("$(wslpath -w $(pwd))")
+for x in "${args[@]}"; do
+    cmd+=("\"$(escape_word "$x")\"")
+done
+
+# Parse options
+if [[ $(uname -r) =~ microsoft-standard-WSL ]]; then
+    # automatically convert to unix from windows path by wslpath.
+    args=()
+    end=""
+    maybe_opt=""
+    while [ $# -gt 0 ]
+    do
+	if [ -n "$end" ]; then
+	    args+=("$1")
+	else
+	    case "$1" in
+		--)
+		    end=1
+		    args+=("$1")
+		    ;;
+		[a-zA-Z]:*|[./\\]*)
+		    args+=("$(wslpath -w "$1")")
+		    ;;
+		*)
+		    args+=("$1")
+		    ;;
+	    esac
+	fi
+	shift
+    done
+else
+    args=$@
+fi
+
+# Apped bl executable command.
+# Using pyenv will launch shims/bl.bat and change the directory to "C:∕Windows" Make sure to run bl.exe instead of bl.bat.
+cmd+=('; if (Get-Command "pyenv" -ErrorAction SilentlyContinue) { $bl = (pyenv which bl) ; $code=$LASTEXITCODE ; if ($code -ne 0) { Write-Host "Error: $bl" ; $bl = "" } } else { $bl = "bl" } ; . "$bl"')
+
+# Make connectable from WSL
+wsl_ip=$(sed -ne 's,^\s*nameserver\s*\(.*\)$,\1,p' /etc/resolv.conf)
+cmd+=('--listen' "$wsl_ip" '--no-password')
+
+# Append user arguments.
+for x in "${args[@]}"; do
+    cmd+=("\"$(escape_word "$x")\"")
+done
+
+# Run jupyter notebook
+#set -x
+exec powershell.exe -Command "${cmd[*]}"

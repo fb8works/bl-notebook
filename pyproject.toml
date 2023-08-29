@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "bl-notebook"
+version = "0.1.0"
+description = ""
+authors = ["Daisuke Arai <daisuke.qu@gmail.com>"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
+packages = [{include = "bl_notebook", from = "src"}]
+
+[tool.black]
+target-version = ["py310"]
+line-length = 79
+
+[tool.flake8]
+max-line-length = 79
+extend-ignore = "E203"
+
+[tool.isort]
+profile = "black"
+py_version = 310
+line_length = 79
+
+[tool.poetry.scripts]
+bl = 'bl_notebook.cli:main'
+
+[tool.poetry.dependencies]
+python = "^3.8"
+tqdm = "^4.65.0"
+attrs = "^23.1.0"
+click = "^8.1.4"
+requests = "^2.31.0"
+jupyterlab = "^3.6.2"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.3.3"
+pytest = "^7.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

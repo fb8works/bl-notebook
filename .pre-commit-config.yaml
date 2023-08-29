@@ -1,0 +1,49 @@
+# https://developer.lsst.io/python/formatting.html
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-yaml
+        args:
+          - "--unsafe"
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/psf/black
+    rev: 23.1.0
+    hooks:
+      - id: black
+        # It is recommended to specify the latest version of Python
+        # supported by your project here, or alternatively use
+        # pre-commit's default_language_version, see
+        # https://pre-commit.com/#top_level-default_language_version
+        language_version: python3.11
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        name: isort (python)
+  - repo: https://github.com/PyCQA/flake8
+    rev: 5.0.4
+    hooks:
+      - id: flake8
+        entry: pflake8
+        additional_dependencies:
+          - pyproject-flake8
+          - pyflakes
+          - pycodestyle
+          - flake8-bugbear
+          - flake8-comprehensions
+          - flake8-eradicate
+          - flake8-mutable
+          - flake8-simplify
+          - flake8-builtins
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages:
+          - "pre-push"
