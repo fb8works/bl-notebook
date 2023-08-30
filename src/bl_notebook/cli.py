@@ -19,23 +19,14 @@ config = Config()
 
 
 def get_default_ostypes():
-    if is_win32():
-        return [OSType.WINDOWS.value]
-    else:
-        return [OSType.LINUX.value]
+    return [OSType(platform.system()).name.lower()]
 
 
 def get_default_architectures():
-    machine = platform.machine()
-    if Architecture(machine) == Architecture.X64:
-        # if re.match(r"(amd64|x86_64)$", machine, re.I):
-        return ["x86_64", "x86", "any"]
-    if Architecture(machine) == Architecture.X32:
-        # if re.match(r"(i([0-9]86|x86_32)$", machine, re.I):
-        return ["x86"]
-    raise NotImplementedError(
-        f"Sorry, your machine type is not supported {machine}"
-    )
+    arch = [Architecture(platform.machine())]
+    if arch[0] == Architecture.X64:
+        arch += [Architecture.X32]
+    return [x.name.lower() for x in arch]
 
 
 def get_default_blender_version():

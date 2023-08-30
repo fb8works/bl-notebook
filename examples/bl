@@ -62,7 +62,7 @@ fi
 
 # Apped bl executable command.
 # Using pyenv will launch shims/bl.bat and change the directory to "C:∕Windows" Make sure to run bl.exe instead of bl.bat.
-cmd+=('; if (Get-Command "pyenv" -ErrorAction SilentlyContinue) { $bl = (pyenv which bl) ; $code=$LASTEXITCODE ; if ($code -ne 0) { Write-Host "Error: $bl" ; $bl = "" } } else { $bl = "bl" } ; . "$bl"')
+cmd+=('; if (Get-Command "pyenv" -ErrorAction SilentlyContinue) { $bl = (pyenv which bl 2>$null) ; $code=$LASTEXITCODE ; if ($code -ne 0) { Write-Host "Error: $bl" ; $bl = "" } } else { $bl = "bl" } ; . "$bl"')
 
 # Make connectable from WSL
 wsl_ip=$(sed -ne 's,^\s*nameserver\s*\(.*\)$,\1,p' /etc/resolv.conf)
@@ -74,5 +74,4 @@ for x in "${args[@]}"; do
 done
 
 # Run jupyter notebook
-#set -x
 exec powershell.exe -Command "${cmd[*]}"
