@@ -29,7 +29,7 @@ class Version:
                     f"Malformed version string {x!r}"
                     f" (matches {self.BAD_VERSION_ELEMENT_RE!r})"
                 )
-            x = re.sub(r"^0+([^0])", r"\1", x)
+            x = re.sub(r"^0+([1-9])", r"\1", x)
             x = re.sub(r"^(-+)", "", x)
             return x
 

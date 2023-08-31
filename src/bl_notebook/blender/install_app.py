@@ -1,3 +1,4 @@
+from bl_notebook.blender.version import Version
 from bl_notebook.util import print_error
 
 from .app import BlenderApp
@@ -29,7 +30,7 @@ def get_blender_install(
                 " but executable not found: " + str(blender.executable)
             )
 
-    if blender is not None and blender.is_ok():
+    if blender is not None and blender.is_ok() and not remote:
         if verbose:
             print_error(f"Installed blender found: {blender.directory}")
         return blender
@@ -44,14 +45,20 @@ def get_blender_install(
 
     folder = repository.remote.find_version(version)
     if folder is None:
-        raise BlenderNotFound(
-            f"No blender matching version {version}"
-            f" found at {repository.remote.url_base}"
-        )
+        v = Version(version)
+        # e.g., "blender/release/Blender3.6/blender-3.6.2-windows-x64.zip"
+        # "3.6.2-windows-x64" -> "3.6"
+        if len(v.elements) > 2:
+            folder = repository.remote.find_version(".".join(v.elements[:2]))
+        if folder is None:
+            raise BlenderNotFound(
+                f"No blender matching version {version}"
+                f" found at {repository.remote.url_base}"
+            )
 
     try:
         remote_file = folder.find(
-            architectures, ostypes, repository.remote.ext_re
+            version, architectures, ostypes, repository.remote.ext_re
         )
     except FileNotFoundError:
         archnames = f"{'|'.join([x.value for x in architectures])}"

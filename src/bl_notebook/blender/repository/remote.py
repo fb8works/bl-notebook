@@ -3,6 +3,7 @@ import shutil
 import time
 import zipfile
 from contextlib import suppress
+from functools import total_ordering
 from pathlib import Path
 from typing import List, Optional
 
@@ -37,7 +38,8 @@ def download_file(url, filename):
             shutil.copyfileobj(stream, output)
 
 
-@attr.define
+@attr.define(order=False)
+@total_ordering
 class BlenderRemoteFile:
     href: str
     name: str
@@ -46,10 +48,17 @@ class BlenderRemoteFile:
     download_dir: Path
     arch: Architecture
     ostype: OSType
+    sort_key: List[float]
 
     def __attrs_post_init__(self):
         self.apps_root = normalize_path(self.apps_root)
         self.download_dir = normalize_path(self.download_dir)
+
+    def __eq__(self, x):
+        return self.sort_key == x.sort_key
+
+    def __le__(self, x):
+        return self.sort_key <= x.sort_key
 
     @property
     def archive_path(self):
@@ -214,9 +223,15 @@ class BlenderRemoteVersionFolder:
     def _is_match_ostype(cls, ostype, ostypes):
         return any((o == OSType.ANY or o == ostype for o in ostypes))
 
-    def find(self, architectures, ostypes, ext_re):
-        if ext_re is None:
-            ext_re = "|".join([x.ext_re for x in ostypes])
+    @property
+    def folder_version(self) -> str:
+        m = re.match(r"^Blender(\d+\.\d+.*)", self.name, re.I)
+        if m:
+            return m.group(1)
+        raise ValueError(f"Not a bolder remote folder: {self.name}")
+
+    def find_all(self, version, architectures, ostypes, ext_re):
+        version = Version(version)
 
         r = requests.get(self.version_url, allow_redirects=False)
 
@@ -225,13 +240,13 @@ class BlenderRemoteVersionFolder:
             re.I,
         )
 
-        candidates = {}
+        result = []
 
         for line in r.text.split("\n"):
             m = pattern.search(line)
             if m:
                 href = m.group(1)
-                version = m.group(2)
+                ver = m.group(2)
                 name = m.group(3)
 
                 if not re.search(ext_re, name):
@@ -239,26 +254,49 @@ class BlenderRemoteVersionFolder:
 
                 bl_filename = BlenderFileName(name)
 
-                a = self._is_match_architecture(
-                    bl_filename.arch, architectures
-                )
-                b = self._is_match_ostype(bl_filename.ostype, ostypes)
-                if a and b:
-                    candidates[bl_filename.arch] = BlenderRemoteFile(
-                        self.version_url + href,
-                        name,
-                        version=version,
-                        apps_root=self.apps_root,
-                        download_dir=self.download_dir,
-                        arch=bl_filename.arch,
-                        ostype=bl_filename.ostype,
+                def get_sort_key(arr, value):
+                    try:
+                        return len(arr) - arr.index(value)
+                    except ValueError:
+                        return float("-inf")
+
+                arch_sortkey = get_sort_key(architectures, bl_filename.arch)
+                ostype_sortkey = get_sort_key(ostypes, bl_filename.ostype)
+
+                if arch_sortkey >= 0 and ostype_sortkey >= 0:
+                    try:
+                        v = Version(ver)
+                    except ValueError:
+                        continue
+
+                    if v not in version:
+                        continue
+
+                    result.append(
+                        BlenderRemoteFile(
+                            self.version_url + href,
+                            name,
+                            version=ver,
+                            apps_root=self.apps_root,
+                            download_dir=self.download_dir,
+                            arch=bl_filename.arch,
+                            ostype=bl_filename.ostype,
+                            sort_key=[
+                                ostype_sortkey,
+                                arch_sortkey,
+                                v.elements,
+                            ],
+                        )
                     )
 
-        for arch in architectures:
-            with suppress(KeyError):
-                return candidates[arch]
+        return sorted(result)
 
-        raise FileNotFoundError("No match blender file on remote")
+    def find(self, version, architectures, ostypes, ext_re):
+        result = self.find_all(version, architectures, ostypes, ext_re)
+        if len(result) == 0:
+            raise FileNotFoundError("No match blender file on remote")
+
+        return result[-1]
 
 
 class BlenderRemoteRepository:

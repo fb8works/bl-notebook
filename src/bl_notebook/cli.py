@@ -7,6 +7,7 @@ import click
 
 from bl_notebook.blender.criteria import Criteria
 from bl_notebook.blender.ostype import OSType
+from bl_notebook.blender.version import Version
 from bl_notebook.config import Config
 
 from .blender.arch import Architecture
@@ -23,10 +24,11 @@ def get_default_ostypes():
 
 
 def get_default_architectures():
-    arch = [Architecture(platform.machine())]
-    if arch[0] == Architecture.X64:
-        arch += [Architecture.X32]
-    return [x.name.lower() for x in arch]
+    return [Architecture(platform.machine()).name.lower()]
+
+
+def get_default_ext_re(ostypes):
+    return "|".join([x.ext_re for x in ostypes])
 
 
 def get_default_blender_version():
@@ -156,22 +158,20 @@ def get_parameter_non_default(name):
 )
 @click.option(
     "-j",
-    "--nb",
-    "--notebook",
-    "--run-notebook",
-    "run_notebook",
+    "--jupyter",
+    "run_jupyter",
     is_flag=True,
     help="Run jupyter lab or notebook.",
 )
 @click.option("--no-update-kernel", is_flag=True, help="No update kernel.")
 @click.option("--only-update-kernel", is_flag=True, help="Only update kernel.")
 @click.option(
-    "--lab", "--use-lab", "use_lab", is_flag=True, help="Run jupyter lab."
+    "--lab", "--force-lab", "force_lab", is_flag=True, help="Run jupyter lab."
 )
 @click.option(
     "--notebook",
-    "--use-notebook",
-    "use_notebook",
+    "--force-notebook",
+    "force_notebook",
     is_flag=True,
     help="Run jupyter notebook.",
 )
@@ -213,11 +213,11 @@ def main(
     ostypes,
     ext_re,
     run_blender,
-    run_notebook,
+    run_jupyter,
     no_update_kernel,
     only_update_kernel,
-    use_lab,
-    use_notebook,
+    force_lab,
+    force_notebook,
     mirror,
     listen_address,
     password,
@@ -242,6 +242,7 @@ def main(
         architectures, Architecture, "--architectures"
     )
     ostypes = normalize_enum_list(ostypes, OSType, "--ostype")
+    ext_re = get_default_ext_re(ostypes)
 
     # Special option for Use Ein on WSL
     if wsl:
@@ -260,13 +261,13 @@ def main(
             # listen_address is private address
             no_password = True
 
-        if not (run_notebook or use_notebook or use_lab):
-            run_notebook = True
+        if not (run_jupyter or force_notebook or force_lab):
+            run_jupyter = True
 
         no_browser = True
 
-    if use_lab or use_notebook:
-        run_notebook = True
+    if force_lab or force_notebook:
+        run_jupyter = True
 
     if install:
         remote = True
@@ -282,14 +283,14 @@ def main(
 
     args = list(args)
 
-    if run_blender and run_notebook:
+    if run_blender and run_jupyter:
         print_error("Can not use option --run-bleder with notebook options.")
         sys.exit(1)
 
-    if not run_blender and not run_notebook:
+    if not run_blender and not run_jupyter:
         for x in args:
             if re.search(r"\.ipynb$", x):
-                run_notebook = True
+                run_jupyter = True
                 break
 
     if set_blender_version is not None:
@@ -333,15 +334,42 @@ def main(
 
     # --list-blender
     if list_blender:
+        v = get_parameter_non_default("blender_version")
+        if list_all:
+            v = None
+
         if remote:
+            criteria = Criteria(v, architectures, ostypes, ext_re)
+            v1 = Version(v) if v is not None else None
             for folder in reversed(repository.remote.versions):
-                print(f"{str(folder.version):<24s} {folder.version_url}")
+                v2 = Version(folder.folder_version)
+
+                if v1 is not None and (v1 not in v2 and v2 not in v1):
+                    continue
+
+                if len(v2.elements) < 3:
+                    try:
+                        found = False
+                        for bl in folder.find_all(
+                            v, architectures, ostypes, ext_re
+                        ):
+                            print(f"{str(bl.version):<24s} {bl.href}")
+                        if not found and verbose:
+                            print_error(
+                                f"ERROR: {folder.version_url}:"
+                                f" No blender instlation file found"
+                                f" ({criteria})"
+                            )
+                    except FileNotFoundError as exc:
+                        if verbose:
+                            print_error(f"ERROR: {folder.version_url}: {exc}")
+                else:
+                    print(f"{str(folder.version):<24s} {folder.version_url}")
         else:
-            if list_all:
+            if v is None:
                 criteria = Criteria()
                 versions = repository.local.versions
             else:
-                v = get_parameter_non_default("blender_version")
                 criteria = Criteria(v, architectures, ostypes)
                 versions = repository.local.find_all(v, architectures, ostypes)
 
@@ -359,14 +387,15 @@ def main(
                 for blender in versions:
                     if verbose:
                         print(
-                            f"{blender.version:<24s}"
+                            f"{str(blender.version):<24s}"
                             f" {blender.ostype.name.lower():<8s}"
                             f" {blender.arch.name.lower():<8s}"
-                            f" {blender.directory}"
+                            f" {blender.directory!s}"
                         )
                     else:
                         print(
-                            f"{str(blender.version):<24s} {blender.directory}"
+                            f"{str(blender.version):<24s}"
+                            f" {blender.directory!s}"
                         )
 
         sys.exit(0)
@@ -405,7 +434,7 @@ def main(
     if verbose:
         print_error(f"Blender found: {blender.executable}")
 
-    if verbose and (update_kernel or remove_kernel or run_notebook):
+    if verbose and (update_kernel or remove_kernel or run_jupyter):
         print_error(
             "Target kernel path is" f" {notebook.kernel_root / blender.name}"
         )
@@ -420,9 +449,10 @@ def main(
     if update_kernel:
         try:
             notebook.install_kernel(
-                blender.name,
-                blender.python_executable,
-                blender.executable,
+                blender,
+                # blender.name,
+                # blender.python_executable,
+                # blender.executable,
                 interactive=False,
             )
 
@@ -434,15 +464,15 @@ def main(
         sys.exit(0)
 
     # Run blender
-    if not run_notebook:
+    if not run_jupyter:
         cmd = [str(blender.executable)] + args
         run_command(cmd, verbose=verbose, dry_run=dry_run, fail_on_exit=True)
         sys.exit(0)
 
     # Target frontends
-    if not use_lab and not use_notebook:
+    if not force_lab and not force_notebook:
         frontends = ["lab", "notebook"]
-    elif use_lab:
+    elif force_lab:
         frontends = ["lab"]
     else:
         frontends = ["notebook"]

@@ -1,6 +1,6 @@
 # Blender launcher
 
-Blender launcher for windows with jupyter notebook support.
+Blender launcher with jupyter notebook support.
 
 Inspired by [blender-notebook](https://github.com/cheng-chi/blender_notebook).
 
@@ -8,14 +8,14 @@ Inspired by [blender-notebook](https://github.com/cheng-chi/blender_notebook).
 
 # Install
 
-```
-pip install git+https://github.com/fb8works/bl-notebook.git
+```bash
+$ pip install git+https://github.com/fb8works/bl-notebook.git
 ```
 
 # Options
 
-```powershell
-PS> bl --help
+```bash
+$ bl --help
 Usage: bl [OPTIONS] [ARGS]...
 
 Options:
@@ -36,18 +36,16 @@ Options:
   -s, --search-path TEXT          Blender search path.  [default:
                                   C:\app\blender;C:\Program Files\Blender
                                   Foundation]
-  --arch, --architectures TEXT    Target architectures.  [default: x86_64,
-                                  x86, any]
+  --arch, --architectures TEXT    Target architectures.  [default: x64]
   --ostypes TEXT                  Target operating system names.  [default:
-                                  Windows]
+                                  windows]
   --ext, --extension TEXT         Archive extension for download and install.
   --bl, --run-blender             Run blender.
-  -j, --nb, --notebook, --run-notebook
-                                  Run jupyter lab or notebook.
+  -j, --nb, --run-notebook        Run jupyter lab or notebook.
   --no-update-kernel              No update kernel.
   --only-update-kernel            Only update kernel.
-  --lab, --use-lab                Run jupyter lab.
-  --notebook, --use-notebook      Run jupyter notebook.
+  --lab, --force-lab              Run jupyter lab.
+  --notebook, --force-notebook    Run jupyter notebook.
   -m, --mirror TEXT               Blender mirror site.  [default: https://mirr
                                   ors.ocf.berkeley.edu/blender/release/]
   --ip, --listen TEXT             Listen address.
@@ -63,8 +61,8 @@ Options:
 
 # List installed blenders
 
-```powershell
-PS C:\> bl --list
+```bash
+$ bl --list
 3.2.2-windows-x64        C:\app\blender\blender-3.2.2-windows-x64
 3.2                      C:\Program Files\Blender Foundation\Blender 3.2
 3.3                      C:\Program Files\Blender Foundation\Blender 3.3
@@ -74,19 +72,19 @@ PS C:\> bl --list
 
 Run latest version installed.
 
-```powershell
-bl
+```bash
+$ bl
 ```
 
 Or specify the version.
 
-```powershell
-bl -b 3.2
+```bash
+$ bl -b 3.2
 ```
 
 Use '-r' option to install blender if not installed.
 
-```powershell
+```bash
 $ bl -b 3.5 -r
 Downloading https://mirrors.ocf.berkeley.edu/blender/release/Blender3.5/blender-3.5.1-windows-x64.zip...
 100%|███████████████████████████████████████████████████████████████████████████████| 326M/326M [01:36<00:00, 3.56MB/s]
@@ -95,7 +93,7 @@ Extracting c:\app\blender\blender-3.5.1-windows-x64.zip into c:\app\blender\blen
 
 If you want to pass the arguments literally for the blender, use double dash.
 
-```
+```bash
 $ bl -- --help
 ```
 
@@ -103,20 +101,20 @@ $ bl -- --help
 
 Use '--nb', '--notebook' or '--lab' to run jupyter notebook/lab.
 
-```powershell
-bl --nb
+```bash
+$ bl --nb
 ```
 
 Or simply pass the .ipynb filename.
 
-```powershell
-bl my-notebook.ipynb
+```bash
+$ bl my-notebook.ipynb
 ```
 
 You can connect to blender kernel from console.
 
-```powershell
-jupyter console --existing
+```bash
+$ jupyter console --existing
 ```
 
 # Use Ein (Emacs IPython Notebook)
@@ -124,31 +122,35 @@ jupyter console --existing
 If you want to use [EIN](https://github.com/millejoh/emacs-ipython-notebook) with WSL, You need to remote connect over the "vEthernet (WSL)" interface. In this case, You can use --ein option (alias for --ip <WSL_IP> --no-password --no-browser). And type M-x ein:notebooklist-login RET in emacs. After you got prompt "URL or port", then enter the URL (e.g., "http://172.23.240.1:8888").
 
 ```
-bl --ein
+$ bl --ein
 ```
 
 # Set default blender version
 
 Set the default blender version persistently. save settings into ~/.config/bl-notebook/config.ini.
 
-```
-bl -B 3.5
+```bash
+$ bl -B 3.5
 ```
 
 Or create .blender_version file. If .blender_version exists in the current or parent directory, it takes precedence over the default version specified by the -B option.
 
-```
-echo '3.5' > .blender_version
+```bash
+$ echo '3.5' > .blender_version
 ```
 
-# Environment variable
+# Environment variables
 
 | variable       | description                                        |
 |:---------------|:---------------------------------------------------|
 | BL_KERNEL_ARGS | Specifies arguments to be passed to blender kernel |
 
+```bash
+$ $BL_KERNEL_ARGS="--window-geometry 50 50 1280 960" bl --lab
 ```
-$env:BL_KERNEL_ARGS="--window-geometry 50 50 1280 960"; bl --lab
+
+```powershell
+PS> $env:BL_KERNEL_ARGS="--window-geometry 50 50 1280 960"; bl --lab
 ```
 
 # Configuration

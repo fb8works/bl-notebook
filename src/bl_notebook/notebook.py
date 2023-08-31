@@ -54,12 +54,13 @@ class NotebookManager:
 
     def install_kernel(
         self,
-        kernel_name,
-        python_executable,
-        blender_executable,
+        # kernel_name,
+        blender,
+        # python_executable,
+        # blender_executable,
         interactive=False,
     ):
-        kernel_name = re.sub(r"[^a-zA-Z0-9_.-]", "-", kernel_name)
+        kernel_name = re.sub(r"[^a-zA-Z0-9_.-]", "-", blender.name)
         installer = Path(__file__).parent / "blender_notebook" / "installer.py"
         cmd = [
             sys.executable,
@@ -70,7 +71,7 @@ class NotebookManager:
             "--kernel-dir",
             str(self.kernel_root),
             "--blender-exec",
-            str(blender_executable),
+            str(blender.executable),
             "--tag",
             "bl_notebook",
         ]
@@ -84,21 +85,25 @@ class NotebookManager:
         # To avoid this, do not add sys.path and always install ipykernel into
         # site-packages in blender's python.
 
+        env = os.environ.copy()
+        env["PATH"] = str(blender.lib) + os.sep + env["PATH"]
+
         # Test if bl_notebook is installed.
         code = run_command(
-            [python_executable, "-c", "import ipykernel"],
+            [blender.python_executable, "-c", "import ipykernel"],
             verbose=self.verbose,
             dry_run=self.dry_run,
             show_nonzero=False,
             fail_on_exit=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            env=env,
         )
         if code is None or code != 0:
             print_error("Installing ipykernel...")
             run_command(
                 [
-                    python_executable,
+                    blender.python_executable,
                     "-m",
                     "pip",
                     "install",
@@ -108,6 +113,7 @@ class NotebookManager:
                 verbose=self.verbose,
                 dry_run=self.dry_run,
                 fail_on_exit=True,
+                env=env,
             )
 
     def execute_notebook(

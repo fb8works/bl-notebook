@@ -54,6 +54,7 @@ class BlenderApp:
     name: str = attr.ib(init=False)
     executable: Path = attr.ib(init=False)
     python_executable: Path = attr.ib(init=False)
+    lib: Path = attr.ib(init=False)
 
     def __attrs_post_init__(self):
         if self.path is None or self.path == "":
@@ -86,6 +87,7 @@ class BlenderApp:
                     raise RuntimeError(str(exc))
 
         self.executable = make_executable_filename(p, self.ostype)
+        self.lib = self.directory / "lib"
 
     @property
     def version_major_minor(self):

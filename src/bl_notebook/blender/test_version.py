@@ -1,6 +1,16 @@
 from .version import Version
 
 
+def test_version1():
+    a = Version("3.5.1-windows-x64")
+    assert a.version == "3.5.1-windows-x64"
+
+
+def test_version2():
+    a = Version("3.6.0-windows-x64")
+    assert a.version == "3.6.0-windows-x64"
+
+
 def test_version_equal():
     a1 = Version("3.4.1")
     a2 = Version("3.4.1")
