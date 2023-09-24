@@ -9,7 +9,7 @@ from shutil import rmtree
 
 from jupyter_core.paths import jupyter_data_dir
 
-from .util import make_password, print_command, print_error, run_command
+from .util import make_password, print_command, print_error, run_command, join_path_list
 
 
 class NotebookManager:
@@ -86,11 +86,12 @@ class NotebookManager:
         # site-packages in blender's python.
 
         env = os.environ.copy()
-        env["PATH"] = str(blender.lib) + os.sep + env["PATH"]
+
+        os.environ["PATH"] = env["PATH"]
 
         # Test if bl_notebook is installed.
         code = run_command(
-            [blender.python_executable, "-c", "import ipykernel"],
+            [str(blender.python_executable), "-c", "import ipykernel"],
             verbose=self.verbose,
             dry_run=self.dry_run,
             show_nonzero=False,
@@ -103,7 +104,17 @@ class NotebookManager:
             print_error("Installing ipykernel...")
             run_command(
                 [
-                    blender.python_executable,
+                    str(blender.python_executable),
+                    "-m",
+                    "ensurepip",
+                ],
+                verbose=self.verbose,
+                dry_run=self.dry_run,
+                fail_on_exit=True,
+            )
+            run_command(
+                [
+                    str(blender.python_executable),
                     "-m",
                     "pip",
                     "install",

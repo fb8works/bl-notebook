@@ -18,7 +18,7 @@ from .version import Version
 
 def get_python_info(python):
     args = [
-        python,
+        str(python),
         "-c",
         "import sys, platform as p;"
         " print(p.machine()); print(p.system()); print(sys.executable)",
@@ -74,7 +74,7 @@ class BlenderApp:
         if strict:
             try:
                 arch, ostype, python_executable = get_python_info(
-                    self.python_executable
+                    str(self.python_executable)
                 )
             except OSError as exc:
                 print_error(f"{self.directory}: {exc}")

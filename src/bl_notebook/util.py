@@ -1,6 +1,7 @@
 import hashlib
 import platform
 import random
+import os
 import re
 import shlex
 import subprocess
@@ -17,6 +18,10 @@ NOTEBOOK_AUTH_SALT_LEN = 12  # notebook.auth.salt_len
 
 def is_win32():
     return re.match(r"^Windows-", platform.platform())
+
+
+def join_path_list(args):
+    return os.pathsep.join(map(str, args))
 
 
 def print_error(*args, dry_run=False, **kwargs):
