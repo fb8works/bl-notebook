@@ -231,7 +231,8 @@ class BlenderRemoteVersionFolder:
         raise ValueError(f"Not a bolder remote folder: {self.name}")
 
     def find_all(self, version, architectures, ostypes, ext_re):
-        version = Version(version)
+        if version is not None:
+            version = Version(version)
 
         r = requests.get(self.version_url, allow_redirects=False)
 
@@ -269,7 +270,7 @@ class BlenderRemoteVersionFolder:
                     except ValueError:
                         continue
 
-                    if v not in version:
+                    if version is not None and v not in version:
                         continue
 
                     result.append(
