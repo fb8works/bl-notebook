@@ -279,7 +279,7 @@ def main(
         )
         sys.exit(1)
 
-    update_kernel = not no_update_kernel or only_update_kernel
+    update_kernel = not run_blender and (not no_update_kernel or only_update_kernel)
 
     args = list(args)
 
