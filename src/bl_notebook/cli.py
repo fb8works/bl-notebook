@@ -19,27 +19,6 @@ from .util import get_ip_address_win, is_win32, print_error, run_command
 config = Config()
 
 
-def get_default_ostypes():
-    return [OSType(platform.system()).name.lower()]
-
-
-def get_default_architectures():
-    return [Architecture(platform.machine()).name.lower()]
-
-
-def get_default_ext_re(ostypes):
-    return "|".join([x.ext_re for x in ostypes])
-
-
-def get_default_blender_version():
-    v = get_blender_version()
-    if v is None:
-        v = config.get("blender", "version")
-    if v == "":
-        v = None
-    return v
-
-
 def get_blender_version(d=None):
     if d is None:
         d = Path(".").resolve()
@@ -133,13 +112,13 @@ def get_parameter_non_default(name):
     "--architectures",
     "architectures",
     multiple=True,
-    default=get_default_architectures(),
+    default=[Architecture(platform.machine()).name.lower()],
     help="Target architectures.",
 )
 @click.option(
     "--ostypes",
     multiple=True,
-    default=get_default_ostypes(),
+    default=[OSType(platform.system()).name.lower()],
     help="Target operating system names.",
 )
 @click.option(
@@ -237,12 +216,14 @@ def main(
             sys.exit(1)
         return values
 
+    args = list(args)
+
     # Normalize option value
     architectures = normalize_enum_list(
         architectures, Architecture, "--architectures"
     )
     ostypes = normalize_enum_list(ostypes, OSType, "--ostype")
-    ext_re = get_default_ext_re(ostypes)
+    ext_re = "|".join([x.ext_re for x in ostypes])
 
     # Special option for Use Ein on WSL
     if wsl:
@@ -279,10 +260,6 @@ def main(
         )
         sys.exit(1)
 
-    update_kernel = not run_blender and (not no_update_kernel or only_update_kernel)
-
-    args = list(args)
-
     if run_blender and run_jupyter:
         print_error("Can not use option --run-bleder with notebook options.")
         sys.exit(1)
@@ -292,6 +269,15 @@ def main(
             if re.search(r"\.ipynb$", x):
                 run_jupyter = True
                 break
+
+    run_blender = run_blender or not run_jupyter
+    update_kernel = not run_blender and (
+        not no_update_kernel or only_update_kernel
+    )
+
+    if run_blender and run_jupyter:
+        print_error("Can not use option --run-bleder with notebook options.")
+        sys.exit(1)
 
     if set_blender_version is not None:
         # save default blender version into ~/.config/bl-notebook/config.ini
@@ -450,9 +436,6 @@ def main(
         try:
             notebook.install_kernel(
                 blender,
-                # blender.name,
-                # blender.python_executable,
-                # blender.executable,
                 interactive=False,
             )
 
