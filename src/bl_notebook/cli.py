@@ -415,6 +415,11 @@ def main(
         sys.exit(0)
 
     if install:
+        if blender is not None:
+            if blender.is_ok():
+                print_error(f"Blender {blender.version} is already installed.")
+            else:
+                print_error(f"Failed to install blender {blender.version}.")
         sys.exit(0)
 
     if verbose:

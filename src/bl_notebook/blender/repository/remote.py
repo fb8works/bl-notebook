@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 import time
@@ -27,15 +28,22 @@ from bl_notebook.util import (
 
 def download_file(url, filename):
     # make an HTTP request within a context manager
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
+    delete = True
+    try:
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
 
-        def progress(r):
-            length = int(r.headers.get("Content-Length"))
-            return tqdm.wrapattr(r.raw, "read", total=length, desc="")
+            def progress(r):
+                length = int(r.headers.get("Content-Length"))
+                return tqdm.wrapattr(r.raw, "read", total=length, desc="")
 
-        with progress(r) as stream, open(filename, "wb") as output:
-            shutil.copyfileobj(stream, output)
+            with progress(r) as stream, open(filename, "wb") as output:
+                shutil.copyfileobj(stream, output)
+                delete = False
+    finally:
+        if delete:
+            with suppress(FileNotFoundError):
+                os.unlink(filename)
 
 
 @attr.define(order=False)
