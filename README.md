@@ -127,10 +127,10 @@ $ bl --ein
 
 # Set default blender version
 
-Set the default blender version persistently. save settings into ~/.config/bl-notebook/config.ini.
+Set the default blender version persistently. save settings into ~/.config/bl-notebook/config.ini. And add to the startmenu.
 
 ```bash
-$ bl -B 3.5
+$ bl -b 3.5 -B
 ```
 
 Or create .blender_version file. If .blender_version exists in the current or parent directory, it takes precedence over the default version specified by the -B option.

@@ -5,14 +5,13 @@ from pathlib import Path
 
 import click
 
-from bl_notebook.blender.criteria import Criteria
-from bl_notebook.blender.ostype import OSType
-from bl_notebook.blender.version import Version
-from bl_notebook.config import Config
-
 from .blender.arch import Architecture
+from .blender.criteria import Criteria
 from .blender.install_app import BlenderNotFound, get_blender_install
+from .blender.ostype import OSType
 from .blender.repository import Repository
+from .blender.version import Version
+from .config import Config
 from .notebook import NotebookManager
 from .util import get_ip_address_win, is_win32, print_error, run_command
 
@@ -279,13 +278,6 @@ def main(
         print_error("Can not use option --run-bleder with notebook options.")
         sys.exit(1)
 
-    if set_blender_version is not None:
-        # save default blender version into ~/.config/bl-notebook/config.ini
-        c = Config(no_defaults=True)
-        c.set("blender", "version", set_blender_version)
-        c.save()
-        sys.exit(0)
-
     if blender_version is None:
         blender_version = config.get("blender", "version")
         if blender_version == "":
@@ -429,6 +421,20 @@ def main(
         print_error(
             "Target kernel path is" f" {notebook.kernel_root / blender.name}"
         )
+
+    if set_blender_version is not None:
+        # save default blender version into ~/.config/bl-notebook/config.ini
+        c = Config(no_defaults=True)
+        c.set("blender", "version", set_blender_version)
+        c.save()
+        from .shortcut import register_startmenu
+
+        name = "blender/Blender " + str(blender.version)
+        register_startmenu(blender.executable, name=name, verbose=verbose)
+        register_startmenu(
+            blender.executable, name="blender/Blender", verbose=verbose
+        )
+        sys.exit(0)
 
     # --remove-kernel
     if remove_kernel or only_update_kernel:
