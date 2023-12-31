@@ -17,17 +17,18 @@ def register_startmenu(
     verbose=False,
 ):
     folder = Path(shell.SHGetFolderPath(0, shellcon.CSIDL_PROGRAMS, None, 0))
-    folder = folder.resolve(strict=False)
-    name = name + ".lnk"
-    dest = str(folder / name)
-    folder.mkdir(parents=True, exist_ok=True)
-    Path(dest).unlink(missing_ok=True)
+    fullpath = folder.resolve(strict=False) / (name + ".lnk")
+    fullpath.parent.mkdir(parents=True, exist_ok=True)
+
+    # Force re-create
+    fullpath.unlink(missing_ok=True)
+
     if description is None:
         description = name
     if verbose:
-        print_error(f"A shortcut named {str(dest)} was created.")
+        print_error(f"A shortcut named {str(fullpath)} was created.")
     create_shortcut(
-        dest,
+        str(fullpath),
         target_path=executable,
         description=name,
         arguments=arguments,

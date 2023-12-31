@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bl-notebook"
-version = "0.1.6"
+version = "0.1.7"
 description = ""
 authors = ["Daisuke Arai <daisuke.qu@gmail.com>"]
 license = "GPL-3.0-or-later"

@@ -278,6 +278,13 @@ def main(
         print_error("Can not use option --run-bleder with notebook options.")
         sys.exit(1)
 
+    if set_blender_version is not None:
+        if blender_version is not None:
+            print_error("Can not use option [-B|--set-blender-version] with [b|--version].")
+            sys.exit(1)
+        if blender_version is None:
+            blender_version = set_blender_version
+
     if blender_version is None:
         blender_version = config.get("blender", "version")
         if blender_version == "":
@@ -423,17 +430,19 @@ def main(
         )
 
     if set_blender_version is not None:
-        # save default blender version into ~/.config/bl-notebook/config.ini
-        c = Config(no_defaults=True)
-        c.set("blender", "version", set_blender_version)
-        c.save()
         from .shortcut import register_startmenu
 
+        # save config
+        config.set("blender", "version", set_blender_version)
+        config.save()
+
+        # create start menu shortcut
         name = "blender/Blender " + str(blender.version)
         register_startmenu(blender.executable, name=name, verbose=verbose)
         register_startmenu(
             blender.executable, name="blender/Blender", verbose=verbose
         )
+
         sys.exit(0)
 
     # --remove-kernel

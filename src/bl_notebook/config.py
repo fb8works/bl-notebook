@@ -72,10 +72,15 @@ class Config:
             config_path = get_default_config_path()
         self.config_path = Path(config_path).expanduser()
         self.config = configparser.RawConfigParser()
+
+        defaults = _get_default_config()
+        for section in defaults.keys():
+            self.config.add_section(section)
+
         if not no_defaults:
-            defaults = _get_default_config()
             for section, value in defaults.items():
                 self.config[section] = value
+
         self.config.read(self.config_path)
 
     def save(self):
